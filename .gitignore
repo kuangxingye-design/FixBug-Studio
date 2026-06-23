@@ -1,0 +1,49 @@
+# 依赖
+node_modules/
+.pnp
+.pnp.js
+
+# 构建输出
+.next/
+dist/
+build/
+out/
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# 数据库文件
+*.db
+*.db-journal
+*.sqlite
+
+# 上传文件（本地开发）
+uploads/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 日志
+logs/
+*.log
+npm-debug.log*
+
+# Docker
+.docker/
+
+# 测试覆盖率
+coverage/
+
+# TypeScript 编译缓存
+*.tsbuildinfo
+next-env.d.ts
