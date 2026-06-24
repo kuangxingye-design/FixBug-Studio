@@ -1,6 +1,9 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
+import { sessionPlugin } from "./middleware/session.js";
+import { authMiddleware } from "./middleware/auth.js";
+import { registerAllTools } from "./tools/index.js";
 
 const PORT = parseInt(process.env.PORT || "3001", 10);
 const HOST = process.env.HOST || "0.0.0.0";
@@ -15,22 +18,47 @@ const app = Fastify({
   },
 });
 
-// Register plugins
+// ============================================================
+// Plugin Registration
+// ============================================================
+
+// CORS
 await app.register(cors, {
   origin: process.env.CORS_ORIGIN || "http://localhost:3000",
   credentials: true,
 });
 
+// Cookie parsing (needed for session management)
 await app.register(cookie, {
-  secret: process.env.COOKIE_SECRET || "fixbug-studio-dev-secret-change-in-production",
+  secret:
+    process.env.COOKIE_SECRET || "fixbug-studio-dev-secret-change-in-production",
 });
 
-// Health check endpoint
+// Session plugin — parses session cookie, makes session available via req.getSession()
+await app.register(sessionPlugin);
+
+// ============================================================
+// Global Hooks
+// ============================================================
+
+// Auth middleware — runs on every request, injects req.user if logged in
+app.addHook("onRequest", authMiddleware);
+
+// ============================================================
+// Health Check
+// ============================================================
 app.get("/api/health", async () => {
   return { status: "ok", timestamp: new Date().toISOString() };
 });
 
-// Graceful shutdown
+// ============================================================
+// Tool Routes — register all tools as REST endpoints
+// ============================================================
+await registerAllTools(app);
+
+// ============================================================
+// Graceful Shutdown
+// ============================================================
 const shutdown = async () => {
   app.log.info("Shutting down...");
   await app.close();
@@ -40,10 +68,16 @@ const shutdown = async () => {
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 
-// Start server
+// ============================================================
+// Start Server
+// ============================================================
 try {
   await app.listen({ port: PORT, host: HOST });
   app.log.info(`Server running at http://${HOST}:${PORT}`);
+  app.log.info(`Health check: http://${HOST}:${PORT}/api/health`);
+  app.log.info(
+    `Site config:  http://${HOST}:${PORT}/api/tools/site-config`
+  );
 } catch (err) {
   app.log.error(err);
   process.exit(1);

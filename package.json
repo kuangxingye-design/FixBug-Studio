@@ -4,12 +4,11 @@
   "private": true,
   "description": "FixBug Studio — AI Agent-driven personal blog with app portal",
   "workspaces": [
-    "packages/backend",
-    "packages/frontend"
+    "packages/backend"
   ],
   "scripts": {
-    "dev": "npm run dev --workspaces",
-    "build": "npm run build --workspaces",
+    "dev": "npm -w packages/backend run dev",
+    "build": "npm -w packages/backend run build",
     "lint": "echo 'Lint not configured yet'",
     "test": "echo 'Tests not configured yet'"
   },
