@@ -1,0 +1,20 @@
+{
+  "name": "fixbug-studio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FixBug Studio — AI Agent-driven personal blog with app portal",
+  "workspaces": [
+    "packages/backend",
+    "packages/frontend"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces",
+    "build": "npm run build --workspaces",
+    "lint": "echo 'Lint not configured yet'",
+    "test": "echo 'Tests not configured yet'"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}
