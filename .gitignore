@@ -47,3 +47,5 @@ coverage/
 # TypeScript 编译缓存
 *.tsbuildinfo
 next-env.d.ts
+
+GITHUB-GUIDE.md
