@@ -1,7 +1,8 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
-import { sessionPlugin } from "./middleware/session.js";
+import multipart from "@fastify/multipart";
+import { setupSession } from "./middleware/session.js";
 import { authMiddleware } from "./middleware/auth.js";
 import { registerAllTools } from "./tools/index.js";
 
@@ -34,8 +35,16 @@ await app.register(cookie, {
     process.env.COOKIE_SECRET || "fixbug-studio-dev-secret-change-in-production",
 });
 
-// Session plugin — parses session cookie, makes session available via req.getSession()
-await app.register(sessionPlugin);
+// Multipart file upload support (for T-08 upload_markdown_file)
+await app.register(multipart, {
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB
+    files: 1,
+  },
+});
+
+// Session setup — parses session cookie, makes session available via req.getSession()
+setupSession(app);
 
 // ============================================================
 // Global Hooks
@@ -43,6 +52,7 @@ await app.register(sessionPlugin);
 
 // Auth middleware — runs on every request, injects req.user if logged in
 app.addHook("onRequest", authMiddleware);
+
 
 // ============================================================
 // Health Check

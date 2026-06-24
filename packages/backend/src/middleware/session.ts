@@ -1,4 +1,4 @@
-import type { FastifyRequest, FastifyReply } from "fastify";
+import type { FastifyRequest, FastifyReply, FastifyInstance } from "fastify";
 import { nanoid } from "nanoid";
 import { db } from "../db/connection.js";
 import { chatSessions } from "../db/schema.js";
@@ -117,17 +117,17 @@ export async function destroySession(token: string): Promise<void> {
 }
 
 /**
- * Fastify plugin: parses the session cookie and attaches session info to the request.
- * Adds `req.sessionId` and `req.getSession()` helper.
+ * Set up session on the Fastify app.
+ * Must be called directly (not via app.register) to ensure
+ * shareable decorators and hooks work at the root level.
  */
-export async function sessionPlugin(
-  app: import("fastify").FastifyInstance
-): Promise<void> {
+export function setupSession(app: FastifyInstance): void {
+  // Decorate request with session properties
   app.decorateRequest("sessionId", "");
   app.decorateRequest("getSession", () => null);
 
+  // Parse session cookie on every request
   app.addHook("onRequest", async (req: FastifyRequest) => {
-    // Read session cookie
     const rawCookie = req.cookies?.[SESSION_COOKIE];
     const token =
       typeof rawCookie === "string"
