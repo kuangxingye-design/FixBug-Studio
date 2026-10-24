@@ -17,10 +17,14 @@ export default function ProfilePage() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [profileMessage, setProfileMessage] = useState("");
+  const [profileError, setProfileError] = useState("");
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -41,11 +45,29 @@ export default function ProfilePage() {
 
   const handleSaveProfile = async () => {
     setSaving(true);
+    setProfileMessage("");
+    setProfileError("");
     try {
-      await fetch("/api/admin/articles", { method: "PUT" });
-      alert(t("adminProfile.profileSaved"));
+      const res = await fetch("/api/auth/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          displayName: user.displayName,
+          email: user.email,
+          bio: user.bio,
+          avatarUrl: user.avatarUrl,
+        }),
+      });
+
+      if (!res.ok) {
+        setProfileError(t("adminProfile.profileSaveFailed"));
+        return;
+      }
+
+      setProfileMessage(t("adminProfile.profileSaved"));
     } catch (error) {
       console.error("Failed to save profile:", error);
+      setProfileError(t("adminProfile.profileSaveFailed"));
     } finally {
       setSaving(false);
     }
@@ -54,12 +76,30 @@ export default function ProfilePage() {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordSaving(true);
+    setPasswordMessage("");
+    setPasswordError("");
     try {
-      alert(t("adminProfile.passwordNotImplemented"));
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+
+      if (!res.ok) {
+        setPasswordError(
+          res.status === 401
+            ? t("adminProfile.currentPasswordIncorrect")
+            : t("adminProfile.passwordChangeFailed")
+        );
+        return;
+      }
+
+      setPasswordMessage(t("adminProfile.passwordChanged"));
       setCurrentPassword("");
       setNewPassword("");
     } catch (error) {
       console.error("Failed to change password:", error);
+      setPasswordError(t("adminProfile.passwordChangeFailed"));
     } finally {
       setPasswordSaving(false);
     }
@@ -77,6 +117,16 @@ export default function ProfilePage() {
         <Card>
           <CardHeader><h3 className="font-semibold">{t("adminProfile.profileInformation")}</h3></CardHeader>
           <CardContent className="space-y-4">
+            {profileMessage && (
+              <div className="rounded-lg bg-green-50 p-3 text-sm text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                {profileMessage}
+              </div>
+            )}
+            {profileError && (
+              <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/30 dark:text-red-400">
+                {profileError}
+              </div>
+            )}
             <div>
               <label className="mb-1 block text-sm">{t("adminProfile.displayName")}</label>
               <Input value={user.displayName} onChange={(e) => setUser({ ...user, displayName: e.target.value })} />
@@ -103,6 +153,16 @@ export default function ProfilePage() {
           <CardHeader><h3 className="font-semibold">{t("adminProfile.changePassword")}</h3></CardHeader>
           <CardContent>
             <form onSubmit={handleChangePassword} className="space-y-4">
+              {passwordMessage && (
+                <div className="rounded-lg bg-green-50 p-3 text-sm text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                  {passwordMessage}
+                </div>
+              )}
+              {passwordError && (
+                <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/30 dark:text-red-400">
+                  {passwordError}
+                </div>
+              )}
               <div>
                 <label className="mb-1 block text-sm">{t("adminProfile.currentPassword")}</label>
                 <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />

@@ -8,14 +8,30 @@ interface Props {
   searchParams: Promise<{ page?: string }>;
 }
 
+async function getTagName(slug: string): Promise<string> {
+  const apiUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  try {
+    const res = await fetch(`${apiUrl}/api/tags`, { cache: "no-store" });
+    const data = await res.json();
+    const tag = (data.tags || []).find(
+      (t: { slug: string }) => t.slug === slug
+    );
+    return tag?.name || slug;
+  } catch {
+    return slug;
+  }
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = decodeURIComponent(rawSlug);
   const { t } = await getTranslation();
   return { title: t("metadata.tagPage", { name: slug }), description: t("metadata.tagDescription", { name: slug }) };
 }
 
 export default async function TagPage({ params, searchParams }: Props) {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = decodeURIComponent(rawSlug);
   const { page = "1" } = await searchParams;
   const { t } = await getTranslation();
 
@@ -32,9 +48,11 @@ export default async function TagPage({ params, searchParams }: Props) {
     data = await res.json();
   } catch {}
 
+  const tagName = await getTagName(slug);
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
-      <h1 className="mb-2 text-2xl font-bold">{t("tags.tag", { name: slug })}</h1>
+      <h1 className="mb-2 text-2xl font-bold">{t("tags.tag", { name: tagName })}</h1>
       <p className="mb-6 text-sm text-muted-foreground">{t("articles.categoryArticles", { count: data.pagination.total })}</p>
 
       {data.articles.length > 0 ? (

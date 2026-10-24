@@ -9,14 +9,16 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = decodeURIComponent(rawSlug);
   const { t } = await getTranslation();
   const name = slug.charAt(0).toUpperCase() + slug.slice(1).replace(/-/g, " ");
   return { title: t("metadata.categoryPage", { name }), description: t("metadata.categoryDescription", { name }) };
 }
 
 export default async function CategoryPage({ params, searchParams }: Props) {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = decodeURIComponent(rawSlug);
   const { page = "1" } = await searchParams;
   const { t } = await getTranslation();
 

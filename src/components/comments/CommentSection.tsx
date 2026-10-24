@@ -51,7 +51,7 @@ export function CommentSection({ articleSlug }: CommentSectionProps) {
       {loading ? (
         <p className="text-sm text-muted-foreground">{t("comments.loading")}</p>
       ) : (
-        <CommentList comments={comments} />
+        <CommentList comments={comments} onPosted={handleCommentPosted} />
       )}
     </div>
   );

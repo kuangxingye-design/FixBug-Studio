@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "@/i18n/useTranslation";
 import type { Category } from "@/types";
 
@@ -13,6 +13,7 @@ export function CategorySelector({ value, onChange }: CategorySelectorProps) {
   const { t } = useTranslation();
   const [categories, setCategories] = useState<Category[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch("/api/categories")
@@ -21,13 +22,33 @@ export function CategorySelector({ value, onChange }: CategorySelectorProps) {
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    if (!showDropdown) return;
+    const onPointerDown = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowDropdown(false);
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [showDropdown]);
+
   const selected = categories.find((c) => c.name === value);
 
   return (
-    <div className="relative">
+    <div className="relative" ref={rootRef}>
       <button
         type="button"
         onClick={() => setShowDropdown(!showDropdown)}
+        aria-haspopup="listbox"
+        aria-expanded={showDropdown}
         className="flex w-full items-center justify-between rounded-lg border border-border bg-background px-3 py-2 text-sm"
       >
         <span className={selected ? "text-foreground" : "text-muted-foreground"}>

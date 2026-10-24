@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -20,10 +20,15 @@ export default function EditArticlePage() {
   const params = useParams();
   const articleId = params.id as string;
   const { t } = useTranslation();
+  const tRef = useRef(t);
+  useEffect(() => { tRef.current = t; });
 
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState("");
+  const [saveMessage, setSaveMessage] = useState("");
 
   // Form state
   const [title, setTitle] = useState("");
@@ -46,8 +51,10 @@ export default function EditArticlePage() {
 
   const fetchArticle = useCallback(async () => {
     setLoading(true);
+    setError("");
     try {
       const res = await fetch(`/api/admin/articles/${articleId}`);
+      if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
 
       if (data.article) {
@@ -67,6 +74,7 @@ export default function EditArticlePage() {
       }
     } catch (error) {
       console.error("Failed to fetch article:", error);
+      setError(tRef.current("common.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -77,7 +85,10 @@ export default function EditArticlePage() {
   }, [fetchArticle]);
 
   const handleSave = async (publish = false) => {
+    if (saving) return;
     setSaving(true);
+    setError("");
+    setSaveMessage("");
     try {
       let categoryId: number | null = null;
       if (categoryName) {
@@ -127,14 +138,15 @@ export default function EditArticlePage() {
 
       if (!res.ok) {
         const err = await res.json();
-        alert(err.error || t("errors.saveFailed"));
-        return;
+        throw new Error(err.error || t("errors.saveFailed"));
       }
 
       await fetchArticle();
+      setSaveMessage(t("common.saved"));
     } catch (error) {
-      console.error("Save error:", error);
-      alert(t("errors.saveFailed"));
+      setError(
+        error instanceof Error ? error.message : t("errors.saveFailed")
+      );
     } finally {
       setSaving(false);
     }
@@ -148,25 +160,41 @@ export default function EditArticlePage() {
     setExcerpt(version.excerpt || "");
 
     await handleSave(false);
+    setActiveTab("edit");
+  };
 
-    const res = await fetch(`/api/admin/articles/${articleId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: version.title,
-        content: version.content,
-        excerpt: version.excerpt,
-      }),
-    });
+  const handleDelete = async () => {
+    if (!confirm(t("adminArticles.deleteArticleConfirm"))) return;
 
-    if (res.ok) {
-      await fetchArticle();
-      setActiveTab("edit");
+    setDeleting(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/admin/articles/${articleId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error(t("errors.saveFailed"));
+      router.push("/admin/articles");
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : t("errors.saveFailed")
+      );
+      setDeleting(false);
     }
   };
 
   if (loading) {
     return <div className="py-12 text-center text-muted-foreground">{t("common.loading")}</div>;
+  }
+
+  if (error && !article) {
+    return (
+      <div className="py-12 text-center">
+        <p className="text-sm text-red-600">{error}</p>
+        <Button variant="outline" size="sm" className="mt-4" onClick={fetchArticle}>
+          {t("common.retry")}
+        </Button>
+      </div>
+    );
   }
 
   if (!article) {
@@ -212,6 +240,17 @@ export default function EditArticlePage() {
           </Button>
         </div>
       </div>
+
+      {saveMessage && (
+        <div className="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-700 dark:bg-green-900/30 dark:text-green-400">
+          {saveMessage}
+        </div>
+      )}
+      {error && (
+        <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/30 dark:text-red-400">
+          {error}
+        </div>
+      )}
 
       {/* Status bar */}
       <div className="mb-6 flex flex-wrap items-center gap-3">
@@ -386,14 +425,10 @@ export default function EditArticlePage() {
               <Button
                 variant="danger"
                 size="sm"
-                onClick={() => {
-                  if (confirm(t("adminArticles.deleteArticleConfirm"))) {
-                    fetch(`/api/admin/articles/${articleId}`, { method: "DELETE" });
-                    router.push("/admin/articles");
-                  }
-                }}
+                disabled={deleting}
+                onClick={handleDelete}
               >
-                {t("adminArticles.deleteArticle")}
+                {deleting ? t("common.loading") : t("adminArticles.deleteArticle")}
               </Button>
             </CardContent>
           </Card>

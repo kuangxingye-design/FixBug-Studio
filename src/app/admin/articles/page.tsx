@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -22,32 +22,47 @@ export default function AdminArticlesPage() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
+  const abortRef = useRef<AbortController | null>(null);
 
   const fetchArticles = useCallback(async () => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoading(true);
     try {
       const params = new URLSearchParams({ page: String(page), limit: "20" });
       if (search) params.set("search", search);
       if (status) params.set("status", status);
 
-      const res = await fetch(`/api/admin/articles?${params}`);
+      const res = await fetch(`/api/admin/articles?${params}`, {
+        signal: controller.signal,
+      });
       const data = await res.json();
 
       setArticles(data.articles ?? []);
       setTotalPages(data.pagination?.totalPages ?? 1);
     } catch (error) {
+      if (controller.signal.aborted) return;
       console.error("Failed to fetch articles:", error);
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) setLoading(false);
     }
   }, [page, search, status]);
 
   useEffect(() => {
     fetchArticles();
   }, [fetchArticles]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSearch(searchInput), 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   const handleDelete = async (id: number, title: string) => {
     if (!confirm(t("adminArticles.deleteConfirm", { title }))) return;
@@ -144,9 +159,9 @@ export default function AdminArticlesPage() {
         <Input
           type="search"
           placeholder={t("adminArticles.searchPlaceholder")}
-          value={search}
+          value={searchInput}
           onChange={(e) => {
-            setSearch(e.target.value);
+            setSearchInput(e.target.value);
             setPage(1);
           }}
           className="max-w-xs"
@@ -220,9 +235,7 @@ export default function AdminArticlesPage() {
           page={page}
           totalPages={totalPages}
           basePath="/admin/articles"
-          searchParams={
-            status ? { status } : search ? { search } : undefined
-          }
+          onPageChange={(p) => setPage(p)}
         />
       </div>
     </div>

@@ -131,7 +131,7 @@ export default function NewArticlePage() {
   );
 
   const handleSave = async (publish: boolean) => {
-    if (!suggestions) return;
+    if (!suggestions || saving) return;
 
     setSaving(true);
     setSaveError("");

@@ -39,6 +39,16 @@ export function AIChatPanel({ content, onApply, open, onClose }: AIChatPanelProp
     }
   }, [open]);
 
+  // Close on Escape
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !loading) onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, loading, onClose]);
+
   const handleSend = async () => {
     const instruction = input.trim();
     if (!instruction || loading) return;
@@ -150,7 +160,9 @@ export function AIChatPanel({ content, onApply, open, onClose }: AIChatPanelProp
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/30 backdrop-blur-sm"
-        onClick={onClose}
+        onClick={() => {
+          if (!loading) onClose();
+        }}
       />
 
       {/* Panel */}
@@ -165,6 +177,7 @@ export function AIChatPanel({ content, onApply, open, onClose }: AIChatPanelProp
           </div>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">

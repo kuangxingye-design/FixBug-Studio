@@ -38,8 +38,17 @@ export function ArticleCard({
   return (
     <Card
       hover
-      className="overflow-hidden transition-all hover:shadow-md cursor-pointer"
+      role="link"
+      tabIndex={0}
+      aria-label={title}
+      className="overflow-hidden transition-all hover:shadow-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
       onClick={() => router.push(`/articles/${slug}`)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          router.push(`/articles/${slug}`);
+        }
+      }}
     >
       {coverImage && (
         <img

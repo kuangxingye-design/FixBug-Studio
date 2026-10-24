@@ -26,7 +26,10 @@
     "noData": "No data found",
     "allRightsReserved": "© {year} My Blog. All rights reserved.",
     "all": "All",
-    "clear": "Clear"
+    "clear": "Clear",
+    "retry": "Retry",
+    "saved": "Saved",
+    "loadFailed": "Failed to load"
   },
   "home": {
     "featured": "Featured",
@@ -274,7 +277,10 @@
     "deleteConfirm": "Delete this file?",
     "urlCopied": "URL copied to clipboard!",
     "noMedia": "No media files",
-    "noMediaDesc": "Upload images to use in your articles."
+    "noMediaDesc": "Upload images to use in your articles.",
+    "uploadFailed": "Upload failed",
+    "deleteFailed": "Delete failed",
+    "copyFailed": "Copy failed, please copy manually"
   },
   "adminSettings": {
     "title": "Site Settings",
@@ -314,11 +320,15 @@
     "saveProfile": "Save Profile",
     "saving": "Saving...",
     "profileSaved": "Profile saved!",
+    "profileSaveFailed": "Failed to save profile. Please try again.",
     "changePassword": "Change Password",
     "currentPassword": "Current Password",
     "newPassword": "New Password",
     "changePasswordBtn": "Change Password",
     "changing": "Changing...",
+    "passwordChanged": "Password changed successfully.",
+    "currentPasswordIncorrect": "Current password is incorrect.",
+    "passwordChangeFailed": "Failed to change password. Please try again.",
     "passwordNotImplemented": "Password change not yet implemented in this version."
   },
   "versionHistory": {

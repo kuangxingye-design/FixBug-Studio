@@ -21,6 +21,22 @@ function getSecret(): Uint8Array {
   return new TextEncoder().encode(secret);
 }
 
+function getLoginUrl(request: NextRequest, pathname: string): URL {
+  const forwardedProto = request.headers
+    .get("x-forwarded-proto")
+    ?.split(",")[0]
+    .trim();
+  const forwardedHost = request.headers
+    .get("x-forwarded-host")
+    ?.split(",")[0]
+    .trim();
+  const host = forwardedHost || request.headers.get("host") || request.nextUrl.host;
+  const protocol = forwardedProto || request.nextUrl.protocol.replace(":", "");
+  const loginUrl = new URL("/admin/login", `${protocol}://${host}`);
+  loginUrl.searchParams.set("redirect", pathname);
+  return loginUrl;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -58,9 +74,7 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get(SESSION_COOKIE)?.value;
 
   if (!token) {
-    const loginUrl = new URL("/admin/login", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(getLoginUrl(request, pathname));
   }
 
   // Verify JWT token
@@ -68,9 +82,7 @@ export async function middleware(request: NextRequest) {
     await jwtVerify(token, getSecret());
     return NextResponse.next();
   } catch {
-    const loginUrl = new URL("/admin/login", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(getLoginUrl(request, pathname));
   }
 }
 

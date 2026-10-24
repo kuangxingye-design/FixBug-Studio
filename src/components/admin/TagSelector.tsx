@@ -76,6 +76,7 @@ export function TagSelector({ selected, onChange }: TagSelectorProps) {
             {tag}
             <button
               type="button"
+              aria-label={`Remove ${tag}`}
               onClick={() => removeTag(tag)}
               className="ml-1 hover:text-red-500"
             >

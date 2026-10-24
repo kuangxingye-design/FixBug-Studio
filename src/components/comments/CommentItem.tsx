@@ -10,9 +10,10 @@ interface CommentItemProps {
   comment: Comment;
   depth: number;
   articleSlug?: string;
+  onPosted?: () => void;
 }
 
-export function CommentItem({ comment, depth, articleSlug = "" }: CommentItemProps) {
+export function CommentItem({ comment, depth, articleSlug = "", onPosted }: CommentItemProps) {
   const { t, locale } = useTranslation();
   const [showReply, setShowReply] = useState(false);
 
@@ -55,7 +56,7 @@ export function CommentItem({ comment, depth, articleSlug = "" }: CommentItemPro
               <CommentForm
                 articleSlug={articleSlug}
                 parentId={comment.id}
-                onSuccess={() => setShowReply(false)}
+                onSuccess={() => { setShowReply(false); onPosted?.(); }}
                 onCancel={() => setShowReply(false)}
               />
             </div>
@@ -70,6 +71,7 @@ export function CommentItem({ comment, depth, articleSlug = "" }: CommentItemPro
               comment={reply}
               depth={depth + 1}
               articleSlug={articleSlug}
+              onPosted={onPosted}
             />
           ))}
         </div>

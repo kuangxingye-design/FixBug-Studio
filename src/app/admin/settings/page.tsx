@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -9,10 +9,13 @@ import { useTranslation } from "@/i18n/useTranslation";
 
 export default function SettingsPage() {
   const { t } = useTranslation();
+  const tRef = useRef(t);
+  useEffect(() => { tRef.current = t; });
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     fetch("/api/admin/settings")
@@ -21,7 +24,10 @@ export default function SettingsPage() {
         setSettings(data.settings || {});
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {
+        setError(tRef.current("common.loadFailed"));
+        setLoading(false);
+      });
   }, []);
 
   const updateSetting = (key: string, value: string) => {
@@ -29,18 +35,26 @@ export default function SettingsPage() {
   };
 
   const handleSave = async () => {
+    if (saving) return;
     setSaving(true);
     setSaved(false);
+    setError("");
     try {
-      await fetch("/api/admin/settings", {
+      const res = await fetch("/api/admin/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(settings),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || t("errors.saveFailed"));
+      }
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
-      console.error("Failed to save settings:", error);
+      setError(
+        error instanceof Error ? error.message : t("errors.saveFailed")
+      );
     } finally {
       setSaving(false);
     }
@@ -64,6 +78,12 @@ export default function SettingsPage() {
           </Button>
         </div>
       </div>
+
+      {error && (
+        <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/30 dark:text-red-400">
+          {error}
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Blog Info */}

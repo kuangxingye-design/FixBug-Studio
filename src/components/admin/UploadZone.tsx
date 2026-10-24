@@ -90,6 +90,10 @@ export function UploadZone({ onFiles, disabled = false }: UploadZoneProps) {
 
   return (
     <div
+      role="button"
+      tabIndex={disabled ? -1 : 0}
+      aria-disabled={disabled}
+      aria-label={t("adminArticles.uploadMarkdown")}
       className={`relative flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-12 transition-colors ${
         isDragging
           ? "border-primary bg-primary/5"
@@ -100,6 +104,12 @@ export function UploadZone({ onFiles, disabled = false }: UploadZoneProps) {
       onDragOver={handleDrag}
       onDrop={handleDrop}
       onClick={handleClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
     >
       <input
         ref={inputRef}

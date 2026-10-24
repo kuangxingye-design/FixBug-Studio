@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { sessions, users } from "@/lib/db/schema";
 import { eq, and, gt } from "drizzle-orm";
 import { SignJWT, jwtVerify } from "jose";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 
 const SESSION_COOKIE = "blog_session";
 const SESSION_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
@@ -54,9 +54,20 @@ export async function createSession(userId: number): Promise<string> {
     expiresAt,
   });
 
-  // Set cookie (secure only if app URL uses HTTPS)
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "";
-  const isSecure = appUrl.startsWith("https://");
+  // Set cookie. Only use Secure when the actual request is HTTPS.
+  // Deriving from NEXT_PUBLIC_APP_URL breaks local development when the
+  // production app URL is https:// but the local server runs on http://.
+  const headersList = await headers();
+  const host = headersList.get("host") || "";
+  const forwardedProto = headersList.get("x-forwarded-proto");
+  const isLocalhost =
+    host.startsWith("localhost") ||
+    host.startsWith("127.0.0.1") ||
+    host.startsWith("[::1]");
+  const isSecure = !isLocalhost && (
+    forwardedProto === "https" ||
+    (process.env.NEXT_PUBLIC_APP_URL || "").startsWith("https://")
+  );
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, token, {
     httpOnly: true,

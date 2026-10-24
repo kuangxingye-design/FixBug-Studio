@@ -9,6 +9,8 @@ interface PaginationProps {
   totalPages: number;
   basePath: string; // e.g., "/articles" or "/admin/articles"
   searchParams?: Record<string, string>;
+  /** When provided, the component renders buttons instead of links and calls this. */
+  onPageChange?: (page: number) => void;
 }
 
 export function Pagination({
@@ -16,6 +18,7 @@ export function Pagination({
   totalPages,
   basePath,
   searchParams = {},
+  onPageChange,
 }: PaginationProps) {
   const { t } = useTranslation();
 
@@ -41,18 +44,55 @@ export function Pagination({
     }
   }
 
-  return (
-    <nav className="flex items-center justify-center gap-1">
-      <Link href={buildUrl(page - 1)}>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={page <= 1}
-          className="disabled:opacity-50"
-        >
-          {t("common.previous")}
+  const prevDisabled = page <= 1;
+  const nextDisabled = page >= totalPages;
+
+  const pageButton = (p: number) =>
+    onPageChange ? (
+      <Button
+        variant={p === page ? "primary" : "ghost"}
+        size="sm"
+        onClick={() => onPageChange(p)}
+      >
+        {p}
+      </Button>
+    ) : (
+      <Link key={p} href={buildUrl(p)}>
+        <Button variant={p === page ? "primary" : "ghost"} size="sm">
+          {p}
         </Button>
       </Link>
+    );
+
+  const navButton = (
+    disabled: boolean,
+    target: number,
+    label: string
+  ) => {
+    if (disabled) {
+      return (
+        <Button variant="outline" size="sm" disabled className="disabled:opacity-50">
+          {label}
+        </Button>
+      );
+    }
+    if (onPageChange) {
+      return (
+        <Button variant="outline" size="sm" onClick={() => onPageChange(target)}>
+          {label}
+        </Button>
+      );
+    }
+    return (
+      <Link href={buildUrl(target)}>
+        <Button variant="outline" size="sm">{label}</Button>
+      </Link>
+    );
+  };
+
+  return (
+    <nav className="flex items-center justify-center gap-1">
+      {navButton(prevDisabled, page - 1, t("common.previous"))}
 
       {pages.map((p, i) =>
         p === "..." ? (
@@ -60,27 +100,11 @@ export function Pagination({
             ...
           </span>
         ) : (
-          <Link key={p} href={buildUrl(p)}>
-            <Button
-              variant={p === page ? "primary" : "ghost"}
-              size="sm"
-            >
-              {p}
-            </Button>
-          </Link>
+          <span key={p}>{pageButton(p)}</span>
         )
       )}
 
-      <Link href={buildUrl(page + 1)}>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={page >= totalPages}
-          className="disabled:opacity-50"
-        >
-          {t("common.next")}
-        </Button>
-      </Link>
+      {navButton(nextDisabled, page + 1, t("common.next"))}
     </nav>
   );
 }

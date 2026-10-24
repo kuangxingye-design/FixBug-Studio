@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -19,18 +19,26 @@ interface MediaItem {
 
 export default function MediaPage() {
   const { t, locale } = useTranslation();
+  const tRef = useRef(t);
+  useEffect(() => { tRef.current = t; });
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [error, setError] = useState("");
+  const [copiedUrl, setCopiedUrl] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchMedia = useCallback(async () => {
     setLoading(true);
+    setError("");
     try {
       const res = await fetch("/api/admin/media");
       const data = await res.json();
       setMedia(data.media || []);
     } catch (error) {
       console.error("Failed to fetch media:", error);
+      setError(tRef.current("common.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -43,18 +51,24 @@ export default function MediaPage() {
     if (!file) return;
 
     setUploading(true);
+    setError("");
     try {
       const formData = new FormData();
       formData.append("file", file);
 
-      await fetch("/api/admin/media", {
+      const res = await fetch("/api/admin/media", {
         method: "POST",
         body: formData,
       });
-
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || t("adminMedia.uploadFailed"));
+      }
       fetchMedia();
     } catch (error) {
-      console.error("Upload failed:", error);
+      setError(
+        error instanceof Error ? error.message : t("adminMedia.uploadFailed")
+      );
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -63,14 +77,31 @@ export default function MediaPage() {
 
   const handleDelete = async (id: number) => {
     if (!confirm(t("adminMedia.deleteConfirm"))) return;
-    await fetch(`/api/admin/media/${id}`, { method: "DELETE" });
-    fetchMedia();
+
+    setDeletingId(id);
+    setError("");
+    try {
+      const res = await fetch(`/api/admin/media/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error(t("adminMedia.deleteFailed"));
+      fetchMedia();
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : t("adminMedia.deleteFailed")
+      );
+    } finally {
+      setDeletingId(null);
+    }
   };
 
-  const handleCopyUrl = (url: string) => {
+  const handleCopyUrl = async (url: string) => {
     const fullUrl = `${window.location.origin}${url}`;
-    navigator.clipboard.writeText(fullUrl);
-    alert(t("adminMedia.urlCopied"));
+    try {
+      await navigator.clipboard.writeText(fullUrl);
+      setCopiedUrl(url);
+      setTimeout(() => setCopiedUrl(""), 2000);
+    } catch {
+      setError(t("adminMedia.copyFailed"));
+    }
   };
 
   const formatSize = (bytes: number) => {
@@ -86,18 +117,33 @@ export default function MediaPage() {
           <h1 className="text-2xl font-bold">{t("adminMedia.title")}</h1>
           <p className="text-sm text-muted-foreground">{t("adminMedia.description")}</p>
         </div>
-        <label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleUpload}
-            className="hidden"
-          />
-          <Button variant="primary" disabled={uploading} onClick={(e) => (e.currentTarget.previousElementSibling as HTMLInputElement)?.click()}>
-            {uploading ? t("adminMedia.uploading") : t("adminMedia.uploadImage")}
-          </Button>
-        </label>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleUpload}
+          className="hidden"
+        />
+        <Button
+          variant="primary"
+          disabled={uploading}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          {uploading ? t("adminMedia.uploading") : t("adminMedia.uploadImage")}
+        </Button>
       </div>
+
+      {error && (
+        <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/30 dark:text-red-400">
+          {error}
+        </div>
+      )}
+
+      {copiedUrl && (
+        <div className="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-700 dark:bg-green-900/30 dark:text-green-400">
+          {t("adminMedia.urlCopied")}
+        </div>
+      )}
 
       {loading ? (
         <div className="py-12 text-center text-muted-foreground">{t("common.loading")}</div>
@@ -120,7 +166,15 @@ export default function MediaPage() {
                 </p>
                 <div className="flex gap-1 pt-1">
                   <Button size="sm" variant="ghost" onClick={() => handleCopyUrl(item.url)}>{t("adminMedia.copyUrl")}</Button>
-                  <Button size="sm" variant="ghost" onClick={() => handleDelete(item.id)} className="text-red-500">{t("adminMedia.delete")}</Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleDelete(item.id)}
+                    className="text-red-500"
+                    disabled={deletingId === item.id}
+                  >
+                    {deletingId === item.id ? t("common.loading") : t("adminMedia.delete")}
+                  </Button>
                 </div>
               </div>
             </Card>

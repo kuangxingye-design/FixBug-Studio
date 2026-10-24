@@ -6,9 +6,10 @@ import type { Comment } from "@/types";
 
 interface CommentListProps {
   comments: Comment[];
+  onPosted?: () => void;
 }
 
-export function CommentList({ comments }: CommentListProps) {
+export function CommentList({ comments, onPosted }: CommentListProps) {
   const { t } = useTranslation();
 
   if (comments.length === 0) {
@@ -22,7 +23,7 @@ export function CommentList({ comments }: CommentListProps) {
   return (
     <div className="space-y-4">
       {comments.map((comment) => (
-        <CommentItem key={comment.id} comment={comment} depth={0} />
+        <CommentItem key={comment.id} comment={comment} depth={0} onPosted={onPosted} />
       ))}
     </div>
   );

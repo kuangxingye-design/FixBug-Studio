@@ -26,7 +26,10 @@
     "noData": "暂无数据",
     "allRightsReserved": "© {year} 我的博客。保留所有权利。",
     "all": "全部",
-    "clear": "清除"
+    "clear": "清除",
+    "retry": "重试",
+    "saved": "已保存",
+    "loadFailed": "加载失败"
   },
   "home": {
     "featured": "精选文章",
@@ -274,7 +277,10 @@
     "deleteConfirm": "确定删除此文件？",
     "urlCopied": "链接已复制到剪贴板！",
     "noMedia": "暂无媒体文件",
-    "noMediaDesc": "上传图片以在文章中使用。"
+    "noMediaDesc": "上传图片以在文章中使用。",
+    "uploadFailed": "上传失败",
+    "deleteFailed": "删除失败",
+    "copyFailed": "复制失败，请手动复制"
   },
   "adminSettings": {
     "title": "站点设置",
@@ -314,11 +320,15 @@
     "saveProfile": "保存资料",
     "saving": "保存中...",
     "profileSaved": "资料已保存！",
+    "profileSaveFailed": "资料保存失败，请重试。",
     "changePassword": "修改密码",
     "currentPassword": "当前密码",
     "newPassword": "新密码",
     "changePasswordBtn": "修改密码",
     "changing": "修改中...",
+    "passwordChanged": "密码已修改。",
+    "currentPasswordIncorrect": "当前密码不正确。",
+    "passwordChangeFailed": "密码修改失败，请重试。",
     "passwordNotImplemented": "此版本暂未实现密码修改功能。"
   },
   "versionHistory": {

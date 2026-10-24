@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "10");
   const category = searchParams.get("category") || undefined;
+  const tag = searchParams.get("tag") || undefined;
   const search = searchParams.get("search") || undefined;
   const sort = searchParams.get("sort") || "latest";
 
@@ -24,6 +25,11 @@ export async function GET(request: NextRequest) {
         like(articles.title, `%${search}%`),
         like(articles.excerpt, `%${search}%`)
       )
+    );
+  }
+  if (tag) {
+    conditions.push(
+      sql`${articles.id} IN (SELECT ${articleTags.articleId} FROM ${articleTags} INNER JOIN ${tags} ON ${articleTags.tagId} = ${tags.id} WHERE ${tags.slug} = ${tag})`
     );
   }
 
